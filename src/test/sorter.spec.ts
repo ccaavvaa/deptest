@@ -3,6 +3,7 @@ import 'mocha';
 import * as topologicalSorter from '../lib/index';
 const assert = chai.assert;
 const expect = chai.expect;
+
 class TestNode implements topologicalSorter.IDepNode {
     public nodes: topologicalSorter.IDepNode[] = [];
     constructor(public name: string) {
@@ -63,6 +64,7 @@ describe('TopologicalSorter', () => {
             .execute(nodes);
         assert(check(sorted));
     });
+
     it('sort a->bc, d->e', () => {
         setNodes(['a', 'b', 'c', 'd', 'e']);
         addDeps('a', 'b', 'c');
@@ -70,5 +72,18 @@ describe('TopologicalSorter', () => {
         const sorted = new topologicalSorter.TopologicalSorter()
             .execute(nodes);
         assert(check(sorted));
+    });
+
+    it('sort A->B->A throw and stack', () => {
+        setNodes(['a', 'b', 'c']);
+        addDeps('a', 'b', 'c');
+        addDeps('b', 'a');
+        const sorter = new topologicalSorter.TopologicalSorter();
+        expect(() => sorter.execute(nodes)).to
+            .throw(topologicalSorter.TopologicalSorter.NOT_A_DAG);
+        const deps = sorter.stack.map((n) => (n as TestNode).name);
+        expect(deps).to.contain('a');
+        expect(deps).to.contain('b');
+        expect(deps.length).to.be.equal(3);
     });
 });
